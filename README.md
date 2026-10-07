@@ -2,6 +2,8 @@
 
 A 3D robot-duel browser game: build a robot from **mobility** (wheels / tracks / legs), **body** (scout / brawler / titan) and **weapon** (gatling / cannon / homing rockets / laser), then fight an AI robot in a small arena. First to win 2 rounds takes the match.
 
+Created for a fun activity during the AS excursion at [UpCloud](https://upcloud.com), where the challenge was to make a static site available on the public internet using an UpCloud server.
+
 Static site (HTML + ES modules + Three.js from jsDelivr), built to be hosted on an UpCloud cloud server with nginx. No build step: any static file host works.
 
 - Code: `site/` (entry `site/js/main.js`)
