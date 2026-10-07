@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "robo-arena",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["dev_server.py", "8090"],
+      "port": 8090
+    }
+  ]
+}

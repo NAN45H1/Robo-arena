@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Robo Arena</title>
+  <meta name="description" content="Build a battle robot from legs, body and weapon, then duel an AI in a 3D arena." />
+  <meta name="theme-color" content="#070a10" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='18' width='36' height='24' rx='4' fill='%2335e0ff'/%3E%3Crect x='22' y='26' width='20' height='5' fill='%23070a10'/%3E%3Crect x='18' y='42' width='8' height='14' fill='%2335e0ff'/%3E%3Crect x='38' y='42' width='8' height='14' fill='%2335e0ff'/%3E%3Crect x='30' y='8' width='4' height='10' fill='%23ff8a3d'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Loading -->
+  <div id="loading" class="screen show">
+    <div class="loader">
+      <div class="logo">ROBO<span>ARENA</span></div>
+      <div class="spinner"></div>
+      <p id="loading-text">Booting reactor…</p>
+    </div>
+  </div>
+
+  <!-- Garage -->
+  <section id="garage" class="screen">
+    <div class="panel">
+      <header class="brand">
+        <div class="logo">ROBO<span>ARENA</span></div>
+        <p>Assemble your war machine, then beat the AI. First to 2 rounds wins.</p>
+      </header>
+      <div class="slot" data-slot="mobility"><h2><em>01</em>Mobility</h2><div class="opts"></div></div>
+      <div class="slot" data-slot="body"><h2><em>02</em>Body</h2><div class="opts"></div></div>
+      <div class="slot" data-slot="weapon"><h2><em>03</em>Weapon</h2><div class="opts"></div></div>
+      <div class="slot"><h2><em>04</em>Paint</h2><div class="swatches" id="swatches"></div></div>
+    </div>
+
+    <aside class="stats-card">
+      <div class="build-name" id="build-name"></div>
+      <div id="stat-bars"></div>
+      <div class="keys">
+        <div><kbd>W A S D</kbd><span>Move</span></div>
+        <div><kbd>Mouse</kbd><span>Aim · LMB fire · RMB zoom</span></div>
+        <div><kbd>Shift</kbd><span>Boost dash</span></div>
+        <div><kbd>Space</kbd><span>Jump (legs)</span></div>
+        <div><kbd>R</kbd><span>Reload</span></div>
+        <div><kbd>M</kbd><span>Mute · <kbd>Esc</kbd> pause</span></div>
+      </div>
+    </aside>
+
+    <div class="deploy-bar">
+      <div class="diff" id="difficulty">
+        <span>AI</span>
+        <button data-d="easy">Easy</button>
+        <button data-d="normal">Normal</button>
+        <button data-d="hard">Hard</button>
+      </div>
+      <button id="deploy" class="cta">DEPLOY <span>▶</span></button>
+    </div>
+    <div class="drag-hint">Drag to rotate</div>
+  </section>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="bars">
+      <div class="bar player">
+        <div class="bar-label"><span id="p-name">YOU</span><span id="p-hp">0</span></div>
+        <div class="bar-track"><div class="bar-ghost" id="p-ghost"></div><div class="bar-fill" id="p-fill"></div></div>
+      </div>
+      <div class="round">
+        <div id="round-label">ROUND 1</div>
+        <div class="score"><span id="score-p">0</span><i>:</i><span id="score-e">0</span></div>
+      </div>
+      <div class="bar enemy">
+        <div class="bar-label"><span id="e-hp">0</span><span id="e-name">AI</span></div>
+        <div class="bar-track"><div class="bar-ghost" id="e-ghost"></div><div class="bar-fill" id="e-fill"></div></div>
+      </div>
+    </div>
+
+    <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+    <div id="hitmarker"><i></i><i></i></div>
+    <svg id="reload-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" class="track" /><circle id="reload-arc" cx="20" cy="20" r="18" class="arc" /></svg>
+
+    <div id="enemy-tag"><div class="tag-name">ENEMY</div><div class="tag-bar"><div id="tag-fill"></div></div><div id="tag-dist">0 m</div></div>
+    <div id="offscreen"></div>
+
+    <canvas id="minimap" width="170" height="170"></canvas>
+
+    <div id="weapon-box">
+      <div id="w-name">Weapon</div>
+      <div class="w-row"><span id="w-state">AMMO</span><b id="w-ammo">0</b></div>
+      <div id="w-bar"><div id="w-fill"></div></div>
+      <div id="boost-box"><span>BOOST</span><div id="boost-bar"><div id="boost-fill"></div></div></div>
+    </div>
+
+    <div id="controls-hint">WASD move · Mouse aim · LMB fire · RMB zoom · Shift boost · Space jump · R reload · Esc pause</div>
+    <button id="btn-pause" aria-label="Pause">❚❚</button>
+
+    <div id="center-msg"><div id="c-big"></div><div id="c-small"></div></div>
+    <div id="toast"></div>
+    <div id="numbers"></div>
+    <div id="vignette"></div>
+    <div id="lowhp"></div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="touch">
+    <div id="stick"><div id="knob"></div></div>
+    <button class="tbtn" id="t-fire">FIRE</button>
+    <button class="tbtn" id="t-jump">JUMP</button>
+    <button class="tbtn" id="t-boost">BOOST</button>
+    <button class="tbtn" id="t-reload">R</button>
+    <button class="tbtn" id="t-zoom">ZOOM</button>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="overlay">
+    <div class="card">
+      <h2>PAUSED</h2>
+      <p>Click resume to lock the mouse and get back in.</p>
+      <div class="btns">
+        <button id="btn-resume" class="cta">RESUME</button>
+        <button id="btn-quit" class="ghost">Quit to garage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result" class="overlay">
+    <div class="card">
+      <h2 id="result-title">VICTORY</h2>
+      <p id="result-sub"></p>
+      <div id="result-stats"></div>
+      <div class="btns">
+        <button id="btn-rematch" class="cta">REMATCH</button>
+        <button id="btn-garage" class="ghost">Back to garage</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    setTimeout(function () {
+      if (!window.__booted) document.getElementById('loading-text').textContent = 'Still loading the 3D engine… check your connection, or try a WebGL-capable browser.';
+    }, 12000);
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
